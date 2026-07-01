@@ -25,7 +25,10 @@ Your job:
 
 Tool usage rules:
 - Always search before recommending
-- If user mentions a price limit → use filter_products with max_price
+- If the user mentions ANY constraint (price limit, category, minimum rating), you MUST
+  pass it as parameters (min_price/max_price/category/min_rating) to whichever tool you call —
+  search_products supports these parameters directly, so use them even when you're also
+  passing a query. Never silently drop a constraint the user mentioned.
 - If user wants comparison → search first, then compare top results
 - If user asks about a specific product ID → use get_product_details
 - You can call tools sequentially (search → compare → recommend)

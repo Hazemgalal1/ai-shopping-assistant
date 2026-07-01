@@ -19,6 +19,9 @@ TOOLS = [
             "description": (
                 "Search for products using natural language query. "
                 "Use this when the user asks to find, look for, or search products. "
+                "ALWAYS pass min_price/max_price/category/min_rating if the user mentioned "
+                "any of them, even alongside the query text — do not ignore constraints "
+                "just because you're using this tool instead of filter_products. "
                 "Returns a list of relevant products."
             ),
             "parameters": {
@@ -38,6 +41,22 @@ TOOLS = [
                         "enum": ["hybrid", "semantic", "tfidf"],
                         "description": "Search method. Use 'hybrid' by default.",
                         "default": "hybrid"
+                    },
+                    "min_price": {
+                        "type": "number",
+                        "description": "Minimum price in USD, if user specified one"
+                    },
+                    "max_price": {
+                        "type": "number",
+                        "description": "Maximum price in USD, if user specified one (e.g. 'under $500')"
+                    },
+                    "category": {
+                        "type": "string",
+                        "description": "Product category if user specified one, e.g. 'Electronics'"
+                    },
+                    "min_rating": {
+                        "type": "number",
+                        "description": "Minimum rating (0-5) if user specified one"
                     }
                 },
                 "required": ["query"]
@@ -49,9 +68,10 @@ TOOLS = [
         "function": {
             "name": "filter_products",
             "description": (
-                "Filter and browse products by category, price range, or rating. "
-                "Use this when the user specifies constraints like 'under $100', "
-                "'in Electronics category', or 'rating above 4'."
+                "Filter and browse products by category, price range, or rating, "
+                "WITHOUT a specific search query. Use this when the user just wants to "
+                "browse/list products by constraints only, e.g. 'show me products under $100' "
+                "with no particular product type in mind."
             ),
             "parameters": {
                 "type": "object",
@@ -198,8 +218,15 @@ class ToolExecutor:
             logger.error(f"Tool error: {e}")
             return {"error": str(e)}
 
-    def _search_products(self, query: str, top_k: int = 5, method: str = "hybrid"):
-        results = self.search_engine.search(query=query, top_k=top_k, method=method)
+    def _search_products(
+        self, query: str, top_k: int = 5, method: str = "hybrid",
+        min_price=None, max_price=None, category=None, min_rating=None
+    ):
+        results = self.search_engine.search(
+            query=query, top_k=top_k, method=method,
+            min_price=min_price, max_price=max_price,
+            category=category, min_rating=min_rating,
+        )
         return {
             "found": len(results),
             "products": results,

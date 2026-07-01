@@ -194,20 +194,21 @@ with st.sidebar:
 def render_product_card(p: dict, show_score: bool = True):
     score = p.get("score") or p.get("similarity_score")
     score_html = f'<span class="badge" style="background:#f3e8ff;color:#6f42c1;">Score: {score:.3f}</span>' if score and show_score else ""
-    st.markdown(f"""
-    <div class="product-card">
-        <div class="product-name">{str(p.get('name','')).title()}</div>
-        <div style="margin-top:6px;">
-            <span class="badge badge-category">{p.get('category','')}</span>
-            <span class="badge badge-price">${p.get('price',0):.2f}</span>
-            <span class="badge badge-rating">⭐ {p.get('rating',0):.1f}</span>
-            {score_html}
-        </div>
-        <div style="margin-top:8px;color:#777;font-size:0.82rem;">
-            {str(p.get('description',''))[:150]}...
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    card_html = (
+        f'<div class="product-card">'
+        f'<div class="product-name">{str(p.get("name","")).title()}</div>'
+        f'<div style="margin-top:6px;">'
+        f'<span class="badge badge-category">{p.get("category","")}</span>'
+        f'<span class="badge badge-price">${p.get("price",0):.2f}</span>'
+        f'<span class="badge badge-rating">⭐ {p.get("rating",0):.1f}</span>'
+        f'{score_html}'
+        f'</div>'
+        f'<div style="margin-top:8px;color:#777;font-size:0.82rem;">'
+        f'{str(p.get("description",""))[:150]}...'
+        f'</div>'
+        f'</div>'
+    )
+    st.markdown(card_html, unsafe_allow_html=True)
 
 is_arabic = st.session_state.language == "ar"
 
