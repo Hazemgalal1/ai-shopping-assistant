@@ -174,8 +174,12 @@ class SearchEngine:
                 continue
             if max_price is not None and r["price"] > max_price:
                 continue
-            if category and r["category"].lower() != category.lower():
-                continue
+            if category:
+                cat_result = str(r["category"]).lower().strip()
+                cat_query = str(category).lower().strip()
+                # Tolerant partial match in either direction instead of exact match
+                if cat_query not in cat_result and cat_result not in cat_query:
+                    continue
             if min_rating is not None and r["rating"] < min_rating:
                 continue
             filtered.append(r)

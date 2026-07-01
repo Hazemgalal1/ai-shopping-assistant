@@ -18,6 +18,9 @@ GROQ_MODEL = "llama-3.3-70b-versatile"
 
 AGENT_SYSTEM_PROMPT = """You are an intelligent AI shopping agent. You have access to a product catalog and several tools.
 
+Available categories in the catalog (use these EXACT values for the category filter, nothing else):
+{available_categories}
+
 Your job:
 1. Understand what the user wants
 2. Decide which tools to call (you can call multiple tools)
@@ -29,17 +32,23 @@ Tool usage rules:
   pass it as parameters (min_price/max_price/category/min_rating) to whichever tool you call —
   search_products supports these parameters directly, so use them even when you're also
   passing a query. Never silently drop a constraint the user mentioned.
+- ONLY use the category filter if the user's request clearly maps to one of the exact
+  categories listed above. If you're not sure which category fits (e.g. "laptop", "gaming
+  product"), DO NOT set the category parameter — just rely on the search query text
+  (query="laptop") to find relevant items. Guessing a category name that doesn't exist
+  will wipe out all results.
 - If user wants comparison → search first, then compare top results
 - If user asks about a specific product ID → use get_product_details
 - You can call tools sequentially (search → compare → recommend)
 - Never make up products — only use results from tools
+- If a tool call returns 0 results, try again without the category filter before giving up
 
 Response rules:
 - Be conversational and helpful
 - Mention specific product names, prices, and ratings from tool results
 - If user writes in Arabic → respond in Arabic
 - Keep responses focused and clear
-- If tools return no results → say so honestly
+- If tools return no results after retrying → say so honestly
 
 {memory_summary}
 """
@@ -60,6 +69,14 @@ class ShoppingAgent:
         self.client = Groq(api_key=api_key)
         self.executor = tool_executor
 
+        # Precompute the list of real categories present in the catalog
+        try:
+            self.available_categories = ", ".join(
+                sorted(self.executor.df["category"].dropna().unique().tolist())
+            )
+        except Exception:
+            self.available_categories = "Electronics, Clothing, Books, Sports, Home"
+
     def run(self, user_message: str, session_id: str = "default") -> dict:
         """
         Main agent loop:
@@ -73,7 +90,8 @@ class ShoppingAgent:
 
         # Build messages
         system = AGENT_SYSTEM_PROMPT.format(
-            memory_summary=memory.get_memory_summary()
+            available_categories=self.available_categories,
+            memory_summary=memory.get_memory_summary(),
         )
         messages = [
             {"role": "system", "content": system},
