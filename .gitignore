@@ -2,8 +2,8 @@
 .streamlit/secrets.toml
 
 # Data & Models
-data/
-models/
+/data/
+/models/
 
 # Python
 __pycache__/
